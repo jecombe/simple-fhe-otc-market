@@ -10,7 +10,7 @@ const Swap: React.FC = () => {
   const [quantity, setQuantity] = useState("");
   const [price, setPrice] = useState("");
 
-  
+
   const { isInitialized } = useFHEVM();
 
   if (!isInitialized) {
@@ -35,23 +35,23 @@ const Swap: React.FC = () => {
       <h2 className="text-xl font-semibold mb-4">Create RFQ OTC</h2>
       
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700">Token to sell</label>
+        <label className="block text-sm font-medium text-gray-700">Address Token to sell</label>
         <input
           type="text"
           value={tokenA}
           onChange={(e) => setTokenA(e.target.value)}
-          placeholder="Ex: ETH"
+          placeholder="Ex: 0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
         />
       </div>
 
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700">Token to receive</label>
+        <label className="block text-sm font-medium text-gray-700">Address Token to receive</label>
         <input
           type="text"
           value={tokenB}
           onChange={(e) => setTokenB(e.target.value)}
-          placeholder="Ex: USDT"
+          placeholder="Ex: 0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
         />
       </div>
@@ -73,7 +73,7 @@ const Swap: React.FC = () => {
           type="number"
           value={price}
           onChange={(e) => setPrice(e.target.value)}
-          placeholder="Ex: 3000 (pour USDT)"
+          placeholder="Ex: 30"
           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
         />
       </div>
