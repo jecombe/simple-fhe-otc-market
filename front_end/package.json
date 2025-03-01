@@ -9,6 +9,10 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/icons-material": "^6.4.6",
+    "@mui/material": "^6.4.6",
     "ethers": "^6.13.5",
     "fhevmjs": "^0.6.2",
     "next": "15.2.0",
@@ -23,6 +27,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.2.0",
+    "prettier": "^3.5.2",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
