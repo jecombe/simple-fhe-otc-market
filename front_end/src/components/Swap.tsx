@@ -10,9 +10,7 @@ const Swap: React.FC = () => {
   const [quantity, setQuantity] = useState("");
   const [price, setPrice] = useState("");
 
-
-
-
+  
   const { isInitialized } = useFHEVM();
 
   if (!isInitialized) {
@@ -30,8 +28,6 @@ const Swap: React.FC = () => {
     }
 
     console.log("Nouvelle demande OTC :", { tokenA, tokenB, quantity, price });
-
-    // Ici, on pourra envoyer la demande vers un smart contract ou une API backend
   };
 
   return (

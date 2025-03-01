@@ -3,10 +3,9 @@ import React, { useState } from "react";
 import { useWallet } from "@/context/WalletContext";
 
 const AcceptSwap: React.FC = () => {
-  const { account } = useWallet(); // Récupérer le compte MetaMask
+  const { account } = useWallet();
   const [orderId, setOrderId] = useState("");
   
-
   const handleAcceptSwap = () => {
     if (!account) {
       alert("Veuillez vous connecter avec MetaMask.");
@@ -28,7 +27,7 @@ const AcceptSwap: React.FC = () => {
         />
       </div>
       <button onClick={handleAcceptSwap} className="w-full bg-green-500 text-white px-4 py-2 rounded-md mt-4">
-        Accepter l'Ordre OTC
+        Accept RFQ
       </button>
     </div>
   );
