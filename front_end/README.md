@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# OTC Market with FHEVM
 
-## Getting Started
+This project implements a **confidential OTC (Over-The-Counter) market**, where both **transaction amounts** and **transaction IDs** are encrypted to ensure user privacy.
 
-First, run the development server:
+The OTC market facilitates exchanges securely using **Fully Homomorphic Encryption (FHE)** operations on data, thanks to **FHEVM** (Fully Homomorphic Encryption Virtual Machine). Sensitive data, such as transaction amounts and IDs, are encrypted to maintain the security and confidentiality of trades. This ensures that even market operators cannot access transaction details.
+
+## Key Features
+
+- **Encrypted Amounts**: All transaction amounts are encrypted before being recorded on the blockchain.
+- **Encrypted Transaction IDs**: Transaction IDs are also encrypted, ensuring that no one, except legitimate participants, can identify specific transactions.
+- **Data Confidentiality**: Users can interact with the market without revealing their financial information or transaction details to others.
+
+## Prerequisites
+
+Before interacting with the frontend interface of the project, please follow these steps:
+
+1. **Install MetaMask**:
+   The project uses MetaMask for account management and transactions. Make sure to install the MetaMask extension on your browser. You can download it from [here](https://metamask.io/).
+
+2. **Connect MetaMask to a compatible Ethereum network**:
+   The project works with a compatible Ethereum network. Ensure that MetaMask is connected to this network before starting to interact with the OTC market.
+
+## Running the Frontend
+
+To run the OTC Market frontend, follow these steps:
+
+### 1. Clone the Repository
+
+Clone the repository to your local machine:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://your-repository-url.git
+cd otc-market
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Install dependencies
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Execute this command to install all dependencies
+```bash
+npm i
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 3. Execute Next.js
 
-## Learn More
+Execute this command to install start front server side
+```bash
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+### 3. Open navigator
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Open navigator like google or firefox
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+https://localhost:3000
+```
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
