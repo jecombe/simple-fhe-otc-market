@@ -4,17 +4,14 @@ import { ethers } from 'ethers';
 import { useWallet } from '@/context/WalletContext';
 
 const MintTokens: React.FC = () => {
-  // Utiliser le context pour accéder au signer et à l'adresse
-
   const { account, signer } = useWallet();
 
-  // Fonction pour mint Token A
   const mintTokenA = async () => {
     if (!signer) {
       alert('connect metamask.');
       return;
     }
-    const tokenAAddress = '0x3f03CE1164071722328c14d46a53092aebc8a8B0'; // Remplace avec l'adresse de ton contrat Token A
+    const tokenAAddress = '0x3f03CE1164071722328c14d46a53092aebc8a8B0';
     const abi = ['function mint(address to, uint64 amount) public'];
     const tokenAContract = new ethers.Contract(tokenAAddress, abi, signer);
 
@@ -30,18 +27,14 @@ const MintTokens: React.FC = () => {
     }
   };
 
-  // Fonction pour mint Token B
   const mintTokenB = async () => {
     if (!signer) {
       alert('You need to connect your wallet first.');
       return;
     }
 
-    const tokenBAddress = '0x8E395706B44c4dcc6A2ed88C9b3eA85A79ef8a68'; // Remplace avec l'adresse de ton contrat Token B
-    const abi = [
-      // Ajoute l'ABI du contrat ERC-20 avec la fonction mint
-      'function mint(address to, uint64 amount) public',
-    ];
+    const tokenBAddress = '0x8E395706B44c4dcc6A2ed88C9b3eA85A79ef8a68';
+    const abi = ['function mint(address to, uint64 amount) public'];
     const tokenBContract = new ethers.Contract(tokenBAddress, abi, signer);
 
     try {

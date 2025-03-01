@@ -1,6 +1,6 @@
-"use client";
-import React from "react";
-import { useWallet } from "@/context/WalletContext";
+'use client';
+import React from 'react';
+import { useWallet } from '@/context/WalletContext';
 
 const Navbar: React.FC = () => {
   const { account, connectWallet } = useWallet();
@@ -10,7 +10,7 @@ const Navbar: React.FC = () => {
       <h1 className="text-lg font-bold">OTC Market</h1>
       {account ? (
         <p className="text-sm">
-          Connecté : {account.slice(0, 6)}...{account.slice(-4)}
+          Connected : {account.slice(0, 6)}...{account.slice(-4)}
         </p>
       ) : (
         <button
