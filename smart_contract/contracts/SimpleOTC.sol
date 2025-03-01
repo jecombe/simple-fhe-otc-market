@@ -4,7 +4,7 @@ import "fhevm/lib/TFHE.sol";
 import "./MyConfidentialERC20.sol";
 contract SimpleOTC {
     struct RFQ {
-        uint id;
+        euint32 id;
         address maker;
         address tokenBuy;
         address tokenSell;
@@ -22,14 +22,15 @@ contract SimpleOTC {
     euint8 internal NOT_ENOUGH_FUNDS;
 
     //events
-    event RFQCreated(uint id, address maker, address indexed tokenBuy, address indexed tokenSell);
-    event RFQFilled(uint id, address taker, address maker, address indexed tokenBuy, address indexed tokenSell);
+    event RFQCreated(address maker, address indexed tokenBuy, address indexed tokenSell);
+    event RFQFilled(address taker, address maker, address indexed tokenBuy, address indexed tokenSell);
     event ErrorChanged(address indexed user);
 
     // state variables
-    uint public rfqCounter;
+    euint32 public rfqCounter;
 
-    mapping(uint => RFQ) private rfqs;
+
+    mapping(euint32 => RFQ) private rfqs;
     mapping(address => LastError) private _lastErrors;
 
     constructor() {
@@ -64,17 +65,20 @@ contract SimpleOTC {
         require(success, "Deposit of token sell failed");
 
         // create RFQ
+        rfqCounter = TFHE.randEuint32();  // Random 32-bit number
+
         rfqs[rfqCounter] = RFQ(rfqCounter, msg.sender, _tokenBuy, _tokenSell, tokenBuyQty, tokenSellQty);
         TFHE.allow(tokenSellQty, address(this));
         TFHE.allow(tokenBuyQty, address(this));
 
-        emit RFQCreated(rfqCounter, msg.sender, _tokenBuy, _tokenSell);
+        emit RFQCreated(msg.sender, _tokenBuy, _tokenSell);
 
-        rfqCounter++;
     }
 
-    function removeRFQ(uint _id) external {
-        RFQ memory rfq = rfqs[_id];
+    function removeRFQ(einput _id,  bytes calldata inputProof) external {
+        euint32 eid = TFHE.asEuint32(_id, inputProof);
+
+        RFQ memory rfq = rfqs[eid];
         require(msg.sender == rfq.maker, "Not maker of RFQ");
 
         // give token sell back to maker
@@ -82,18 +86,20 @@ contract SimpleOTC {
         bool success = MyConfidentialERC20(rfq.tokenSell).transfer(msg.sender, rfq.tokenSellQty);
         require(success);
 
-        delete rfqs[_id];
+        delete rfqs[eid];
     }
 
-    function takeRFQ(uint _id) external {
-        RFQ memory rfq = getRFQ(_id);
+    function takeRFQ(einput _id,  bytes calldata inputProof) external {
+        euint32 eid = TFHE.asEuint32(_id, inputProof);
+
+        RFQ memory rfq = getRFQ(eid);
+
         MyConfidentialERC20 tokenBuy = MyConfidentialERC20(rfq.tokenBuy);
 
-        // Check if the sender has enough balance to transfer
-        euint64 bal = tokenBuy.balanceOf(msg.sender);
+        euint64 balanceTokenBuy = tokenBuy.balanceOf(msg.sender);
 
-        ebool canTransfer = TFHE.le(rfq.tokenBuyQty, bal);
-        // Log the error state: NO_ERROR or NOT_ENOUGH_FUNDS
+        ebool canTransfer = TFHE.le(rfq.tokenBuyQty, balanceTokenBuy);
+
         setLastError(TFHE.select(canTransfer, NO_ERROR, NOT_ENOUGH_FUNDS), msg.sender);
 
         euint64 validatedPrice = TFHE.select(canTransfer, rfq.tokenBuyQty, TFHE.asEuint64(0));
@@ -108,12 +114,12 @@ contract SimpleOTC {
         success = MyConfidentialERC20(rfq.tokenSell).transfer(msg.sender, rfq.tokenSellQty);
         require(success, "Transfer of token sell failed");
 
-        delete rfqs[_id];
+        delete rfqs[eid];
 
-        emit RFQFilled(_id, msg.sender, rfq.maker, rfq.tokenBuy, rfq.tokenSell);
+        emit RFQFilled(msg.sender, rfq.maker, rfq.tokenBuy, rfq.tokenSell);
     }
 
-    function getRFQ(uint _id) public view returns (RFQ memory) {
+    function getRFQ(euint32 _id) public view returns (RFQ memory) {
         RFQ memory rfq = rfqs[_id];
         require(rfq.maker != address(0), "RFQ not found");
         return rfq;
