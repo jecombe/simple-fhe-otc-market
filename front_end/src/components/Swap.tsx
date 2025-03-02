@@ -24,7 +24,7 @@ const Swap: React.FC = () => {
   const [price, setPrice] = useState('');
   const instance = getInstance();
 
-  const OTC_ADDR = '0x8E395706B44c4dcc6A2ed88C9b3eA85A79ef8a68';
+  //const OTC_ADDR = '0x8E395706B44c4dcc6A2ed88C9b3eA85A79ef8a68';
   const { isInitialized } = useFHEVM();
 
   if (!isInitialized) {
@@ -49,7 +49,7 @@ const Swap: React.FC = () => {
     }
     console.log(instance);
 
-    const encryptQtyA = await instance
+    /* const encryptQtyA = await instance
       .createEncryptedInput(OTC_ADDR, account)
       .add64(BigInt(quantity))
       .encrypt();
@@ -57,7 +57,7 @@ const Swap: React.FC = () => {
     const encryptQtyB = await instance
       .createEncryptedInput(OTC_ADDR, account)
       .add64(BigInt(price))
-      .encrypt();
+      .encrypt();*/
 
     console.log('New RFQ OTC :', { tokenA, tokenB, quantity, price });
   };
