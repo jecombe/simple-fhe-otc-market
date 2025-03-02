@@ -10,6 +10,13 @@ interface WalletContextType {
   connectWallet: () => Promise<void>;
 }
 
+declare global {
+  interface Window {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ethereum?: any;
+  }
+}
+
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
 // Hook personnalisé pour utiliser le contexte

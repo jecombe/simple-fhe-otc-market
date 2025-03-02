@@ -6,6 +6,12 @@ interface FHEVMContextType {
   isInitialized: boolean;
 }
 
+declare global {
+  interface Window {
+    fhevmjsInitialized?: boolean;
+  }
+}
+
 const FHEVMContext = createContext<FHEVMContextType | undefined>(undefined);
 
 export const useFHEVM = () => {
