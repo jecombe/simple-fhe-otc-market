@@ -13,11 +13,15 @@
     "@emotion/styled": "^11.14.0",
     "@mui/icons-material": "^6.4.6",
     "@mui/material": "^6.4.6",
+    "@rainbow-me/rainbowkit": "^2.2.4",
+    "@tanstack/react-query": "^5.66.11",
     "ethers": "^6.13.5",
     "fhevmjs": "^0.6.2",
     "next": "15.2.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "viem": "^2.23.5",
+    "wagmi": "^2.14.12"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
