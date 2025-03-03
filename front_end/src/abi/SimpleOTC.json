@@ -1,0 +1,209 @@
+[
+  {
+    "inputs": [],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      }
+    ],
+    "name": "ErrorChanged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "maker",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "tokenBuy",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "tokenSell",
+        "type": "address"
+      }
+    ],
+    "name": "RFQCreated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "taker",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "maker",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "tokenBuy",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "tokenSell",
+        "type": "address"
+      }
+    ],
+    "name": "RFQFilled",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_tokenBuy",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_tokenSell",
+        "type": "address"
+      },
+      {
+        "internalType": "einput",
+        "name": "_tokenBuyQty",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "einput",
+        "name": "_tokenSellQty",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "inputProof",
+        "type": "bytes"
+      }
+    ],
+    "name": "createRFQ",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "euint32",
+        "name": "_id",
+        "type": "uint256"
+      }
+    ],
+    "name": "getRFQ",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "euint32",
+            "name": "id",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "maker",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "tokenBuy",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "tokenSell",
+            "type": "address"
+          },
+          {
+            "internalType": "euint64",
+            "name": "tokenBuyQty",
+            "type": "uint256"
+          },
+          {
+            "internalType": "euint64",
+            "name": "tokenSellQty",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct SimpleOTC.RFQ",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "einput",
+        "name": "_id",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "inputProof",
+        "type": "bytes"
+      }
+    ],
+    "name": "removeRFQ",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "rfqCounter",
+    "outputs": [
+      {
+        "internalType": "euint32",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "einput",
+        "name": "_id",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "inputProof",
+        "type": "bytes"
+      }
+    ],
+    "name": "takeRFQ",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

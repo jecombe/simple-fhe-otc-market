@@ -1,7 +1,5 @@
 'use client';
 import React, { useState } from 'react';
-import { useWallet } from '@/context/WalletContext';
-import { useFHEVM } from '@/context/FHEVMContext';
 import {
   TextField,
   Button,
@@ -11,58 +9,39 @@ import {
   Select,
   FormControl,
   InputLabel,
-  Grid,
+  Box,
 } from '@mui/material';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
-import { getInstance } from '@/fhevmjs';
+import { useFhevmInstance } from '@/hooks/fhevmSetup';
+import { useAccount } from 'wagmi';
 
 const Swap: React.FC = () => {
-  const { account } = useWallet();
   const [tokenA, setTokenA] = useState('');
   const [tokenB, setTokenB] = useState('');
   const [quantity, setQuantity] = useState('');
   const [price, setPrice] = useState('');
-  const instance = getInstance();
+  const { chain } = useAccount();
 
-  //const OTC_ADDR = '0x8E395706B44c4dcc6A2ed88C9b3eA85A79ef8a68';
-  const { isInitialized } = useFHEVM();
+  const { data: fhevmInstance } = useFhevmInstance(
+    chain?.rpcUrls.default.http[0] as string
+  );
 
-  if (!isInitialized) {
-    return <p>Loading FHEVM...</p>;
-  }
-
-  // Liste des tokens pour la sélection
   const tokenList = [
-    { name: 'Token A', address: '0xTokenAddressA' },
-    { name: 'Token B', address: '0xTokenAddressB' },
-    // Ajoute d'autres tokens si nécessaire
+    { name: 'Token A', address: '0x3f03CE1164071722328c14d46a53092aebc8a8B0' },
+    { name: 'Token B', address: '0x8E395706B44c4dcc6A2ed88C9b3eA85A79ef8a68' },
   ];
 
   const handleCreateRequest = async () => {
-    if (!account) {
-      alert('Connect MetaMask.');
-      return;
+    try {
+      console.log(fhevmInstance);
+
+      console.log('New RFQ OTC :', { tokenA, tokenB, quantity, price });
+    } catch (error) {
+      console.log(error);
     }
-    if (!tokenA || !tokenB || !quantity || !price) {
-      alert('Error fill.');
-      return;
-    }
-    console.log(instance);
-
-    /* const encryptQtyA = await instance
-      .createEncryptedInput(OTC_ADDR, account)
-      .add64(BigInt(quantity))
-      .encrypt();
-
-    const encryptQtyB = await instance
-      .createEncryptedInput(OTC_ADDR, account)
-      .add64(BigInt(price))
-      .encrypt();*/
-
-    console.log('New RFQ OTC :', { tokenA, tokenB, quantity, price });
   };
 
-  const handleSwapTokens = () => {
+  const handleSwapTokens = async () => {
     setTokenA(tokenB);
     setTokenB(tokenA);
   };
@@ -73,84 +52,90 @@ const Swap: React.FC = () => {
         Create Request For Quest OTC
       </h2>
 
-      <Grid container spacing={2} alignItems="center" className="mb-6">
-        <Grid item xs={6}>
-          <FormControl fullWidth variant="outlined">
-            <InputLabel>Token to Sell</InputLabel>
-            <Select
-              value={tokenA}
-              onChange={(e) => setTokenA(e.target.value)}
-              label="Token to Sell"
-            >
-              {tokenList.map((token) => (
-                <MenuItem key={token.address} value={token.address}>
-                  {token.name} ({token.address})
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
+      {/* Formulaire Token A */}
+      <Box
+        display="grid"
+        gridTemplateColumns="1fr 1fr"
+        gap={2}
+        className="mb-6"
+      >
+        <FormControl fullWidth variant="outlined">
+          <InputLabel>Token to Sell</InputLabel>
+          <Select
+            value={tokenA}
+            onChange={(e) => setTokenA(e.target.value)}
+            label="Token to Sell"
+          >
+            {tokenList.map((token) => (
+              <MenuItem key={token.address} value={token.address}>
+                {token.name} ({token.address})
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
 
-        <Grid item xs={6}>
-          <TextField
-            label="Quantity"
-            value={quantity}
-            onChange={(e) => setQuantity(e.target.value)}
-            fullWidth
-            variant="outlined"
-            type="number"
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">Qty</InputAdornment>
-              ),
-            }}
-            placeholder="Ex: 1.5"
-          />
-        </Grid>
-      </Grid>
+        <TextField
+          label="Quantity"
+          value={quantity}
+          onChange={(e) => setQuantity(e.target.value)}
+          fullWidth
+          variant="outlined"
+          type="number"
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">Qty</InputAdornment>
+            ),
+          }}
+          placeholder="Ex: 1.5"
+        />
+      </Box>
 
+      {/* Bouton Swap */}
       <div className="flex justify-center mb-6">
         <IconButton onClick={handleSwapTokens} color="primary">
           <SwapVertIcon />
         </IconButton>
       </div>
 
-      <Grid container spacing={2} alignItems="center" className="mb-6">
-        <Grid item xs={6}>
-          <FormControl fullWidth variant="outlined">
-            <InputLabel>Token to Receive</InputLabel>
-            <Select
-              value={tokenB}
-              onChange={(e) => setTokenB(e.target.value)}
-              label="Token to Receive"
-            >
-              {tokenList.map((token) => (
-                <MenuItem key={token.address} value={token.address}>
-                  {token.name} ({token.address})
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
+      {/* Formulaire Token B */}
+      <Box
+        display="grid"
+        gridTemplateColumns="1fr 1fr"
+        gap={2}
+        className="mb-6"
+      >
+        <FormControl fullWidth variant="outlined">
+          <InputLabel>Token to Receive</InputLabel>
+          <Select
+            value={tokenB}
+            onChange={(e) => setTokenB(e.target.value)}
+            label="Token to Receive"
+          >
+            {tokenList.map((token) => (
+              <MenuItem key={token.address} value={token.address}>
+                {token.name} ({token.address})
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
 
-        <Grid item xs={6}>
-          <TextField
-            label="Quantity"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            fullWidth
-            variant="outlined"
-            type="number"
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">Qty</InputAdornment>
-              ),
-            }}
-            placeholder="Ex: 30"
-          />
-        </Grid>
-      </Grid>
+        <TextField
+          label="Quantity"
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+          fullWidth
+          variant="outlined"
+          type="number"
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">Qty</InputAdornment>
+            ),
+          }}
+          placeholder="Ex: 30"
+        />
+      </Box>
 
+      {/* Bouton Submit */}
       <Button
         onClick={handleCreateRequest}
         fullWidth

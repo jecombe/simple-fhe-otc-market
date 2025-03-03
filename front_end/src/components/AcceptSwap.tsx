@@ -1,16 +1,10 @@
 'use client';
 import React, { useState } from 'react';
-import { useWallet } from '@/context/WalletContext';
 
 const AcceptSwap: React.FC = () => {
-  const { account } = useWallet();
   const [orderId, setOrderId] = useState('');
 
   const handleAcceptSwap = () => {
-    if (!account) {
-      alert('Connect to metamask.');
-      return;
-    }
     console.log('Swap accepted with ID :', orderId);
   };
 
