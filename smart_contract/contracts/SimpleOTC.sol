@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 import "fhevm/lib/TFHE.sol";
 import "./MyConfidentialERC20.sol";
 import { SepoliaZamaFHEVMConfig } from "fhevm/config/ZamaFHEVMConfig.sol";
+import { IConfidentialERC20 } from "fhevm-contracts/contracts/token/ERC20/IConfidentialERC20.sol";
 
 contract SimpleOTC is SepoliaZamaFHEVMConfig {
   struct RFQ {
@@ -39,14 +40,16 @@ contract SimpleOTC is SepoliaZamaFHEVMConfig {
 
   // State variables
   euint32 public rfqCounter;
-
+  uint public id = 0;
   //mapping
-  mapping(euint32 => RFQ) private rfqs;
+  mapping(uint => RFQ) private rfqs;
   mapping(address => LastError) private _lastErrors;
 
   constructor() {
     NO_ERROR = TFHE.asEuint8(0); // Code 0: No error
     NOT_ENOUGH_FUNDS = TFHE.asEuint8(1); // Code 1: Insufficient funds
+    TFHE.allowThis(NO_ERROR);
+    TFHE.allowThis(NOT_ENOUGH_FUNDS);
   }
 
   /**
@@ -74,22 +77,20 @@ contract SimpleOTC is SepoliaZamaFHEVMConfig {
     einput _tokenSellQty,
     bytes calldata inputProof
   ) external {
-    MyConfidentialERC20 tokenSell = MyConfidentialERC20(_tokenSell);
     euint64 tokenBuyQty = TFHE.asEuint64(_tokenBuyQty, inputProof);
     euint64 tokenSellQty = TFHE.asEuint64(_tokenSellQty, inputProof);
 
-    // Transfer sell token to contract
     TFHE.allowTransient(tokenSellQty, _tokenSell);
-    bool success = tokenSell.transferFrom(
-      msg.sender,
-      address(this),
-      tokenSellQty
-    );
-    require(success, "Deposit of token sell failed");
+
+    TFHE.allowThis(tokenBuyQty);
+    TFHE.allowThis(tokenSellQty);
+
+    // Transfer sell token to contract
 
     // Create RFQ
-    rfqCounter = TFHE.randEuint32(); // Random 32-bit number
-    rfqs[rfqCounter] = RFQ(
+    // rfqCounter = TFHE.randEuint32(); // Random 32-bit number
+
+    rfqs[id] = RFQ(
       rfqCounter,
       msg.sender,
       _tokenBuy,
@@ -98,10 +99,21 @@ contract SimpleOTC is SepoliaZamaFHEVMConfig {
       tokenSellQty
     );
 
-    TFHE.allow(tokenSellQty, address(this));
-    TFHE.allow(tokenBuyQty, address(this));
+    id++;
+
+    IConfidentialERC20(_tokenSell).transferFrom(
+      msg.sender,
+      address(this),
+      tokenSellQty
+    );
 
     emit RFQCreated(msg.sender, _tokenBuy, _tokenSell);
+  }
+
+  function getRFQID(uint _id) public view returns (euint32) {
+    require(msg.sender == rfqs[_id].maker, "Not authorized");
+
+    return rfqs[_id].id;
   }
 
   /**
@@ -109,34 +121,38 @@ contract SimpleOTC is SepoliaZamaFHEVMConfig {
    * @param _id Encrypted ID of the RFQ to remove.
    * @param inputProof Proof used for encryption validation.
    */
-  function removeRFQ(einput _id, bytes calldata inputProof) external {
-    euint32 eid = TFHE.asEuint32(_id, inputProof);
-    RFQ memory rfq = rfqs[eid];
-    require(msg.sender == rfq.maker, "Not maker of RFQ");
+  // function removeRFQ(einput _id, bytes calldata inputProof) external {
+  //   euint32 eid = TFHE.asEuint32(_id, inputProof);
+  //   RFQ memory rfq = rfqs[eid];
+  //   require(msg.sender == rfq.maker, "Not maker of RFQ");
 
-    // Return sell token to the maker
-    TFHE.allowTransient(rfq.tokenSellQty, rfq.tokenSell);
-    bool success = MyConfidentialERC20(rfq.tokenSell).transfer(
-      msg.sender,
-      rfq.tokenSellQty
-    );
-    require(success);
+  //   // Return sell token to the maker
+  //   TFHE.allowTransient(rfq.tokenSellQty, rfq.tokenSell);
+  //   bool success = MyConfidentialERC20(rfq.tokenSell).transfer(
+  //     msg.sender,
+  //     rfq.tokenSellQty
+  //   );
+  //   require(success);
 
-    delete rfqs[eid];
-  }
+  //   delete rfqs[eid];
+  // }
 
   /**
    * @dev Allows a taker to fulfill an RFQ by swapping tokens.
    * @param _id Encrypted ID of the RFQ to be taken.
-   * @param inputProof Proof used for encryption validation.
    */
-  function takeRFQ(einput _id, bytes calldata inputProof) external {
-    euint32 eid = TFHE.asEuint32(_id, inputProof);
-    RFQ memory rfq = getRFQ(eid);
-    MyConfidentialERC20 tokenBuy = MyConfidentialERC20(rfq.tokenBuy);
+  function takeRFQ(uint _id) external {
+    RFQ memory rfq = getRFQ(_id);
 
-    euint64 balanceTokenBuy = tokenBuy.balanceOf(msg.sender);
+    euint64 balanceTokenBuy = IConfidentialERC20(rfq.tokenBuy).balanceOf(
+      msg.sender
+    );
+
+    TFHE.allowThis(balanceTokenBuy);
+
     ebool canTransfer = TFHE.le(rfq.tokenBuyQty, balanceTokenBuy);
+
+    TFHE.allowThis(canTransfer);
 
     setLastError(
       TFHE.select(canTransfer, NO_ERROR, NOT_ENOUGH_FUNDS),
@@ -148,21 +164,28 @@ contract SimpleOTC is SepoliaZamaFHEVMConfig {
       rfq.tokenBuyQty,
       TFHE.asEuint64(0)
     );
+    TFHE.allow(validatedPrice, msg.sender);
 
     // Transfer tokenBuy from taker to maker
     TFHE.allowTransient(rfq.tokenBuyQty, rfq.tokenBuy);
-    bool success = tokenBuy.transferFrom(msg.sender, rfq.maker, validatedPrice);
+
+    bool success = IConfidentialERC20(rfq.tokenBuy).transferFrom(
+      msg.sender,
+      rfq.maker,
+      validatedPrice
+    );
     require(success, "Transfer of token buy failed");
 
     // Transfer tokenSell from contract to taker
     TFHE.allowTransient(rfq.tokenSellQty, rfq.tokenSell);
-    success = MyConfidentialERC20(rfq.tokenSell).transfer(
+
+    success = IConfidentialERC20(rfq.tokenSell).transfer(
       msg.sender,
       rfq.tokenSellQty
     );
     require(success, "Transfer of token sell failed");
 
-    delete rfqs[eid];
+    delete rfqs[_id];
 
     emit RFQFilled(msg.sender, rfq.maker, rfq.tokenBuy, rfq.tokenSell);
   }
@@ -172,7 +195,7 @@ contract SimpleOTC is SepoliaZamaFHEVMConfig {
    * @param _id Encrypted ID of the RFQ.
    * @return RFQ structure containing details of the request.
    */
-  function getRFQ(euint32 _id) public view returns (RFQ memory) {
+  function getRFQ(uint _id) public view returns (RFQ memory) {
     RFQ memory rfq = rfqs[_id];
     require(rfq.maker != address(0), "RFQ not found");
     return rfq;
