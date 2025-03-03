@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
-import { WalletProvider } from '@/context/WalletContext';
 import Script from 'next/script';
-import { FHEVMProvider } from '@/context/FHEVMContext';
+import '@rainbow-me/rainbowkit/styles.css';
+import { Providers } from './providers';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -35,9 +35,8 @@ export default function RootLayout({
           src="https://cdn.zama.ai/fhevmjs/0.6.2/fhevmjs.umd.cjs"
           strategy="beforeInteractive"
         />
-        <FHEVMProvider>
-          <WalletProvider>{children}</WalletProvider>
-        </FHEVMProvider>
+
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

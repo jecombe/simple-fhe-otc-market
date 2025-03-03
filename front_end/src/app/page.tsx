@@ -1,10 +1,9 @@
 // pages/index.tsx
-
-import Navbar from '@/components/NavBar';
-import Swap from '@/components/Swap';
-import OTCOrders from '@/components/OTCOrders';
+'use client';
 import AcceptSwap from '@/components/AcceptSwap';
 import MintTokens from '@/components/MintToken';
+import Navbar from '@/components/NavBar';
+import Swap from '@/components/Swap';
 
 const Home: React.FC = () => {
   return (
@@ -29,9 +28,7 @@ const Home: React.FC = () => {
       </main>
 
       <div className="mt-8 flex justify-center">
-        <div className="w-full md:w-2/3">
-          <OTCOrders />
-        </div>
+        <div className="w-full md:w-2/3"></div>
       </div>
     </div>
   );
