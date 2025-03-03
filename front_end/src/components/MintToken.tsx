@@ -45,7 +45,7 @@ const MintTokens: React.FC = () => {
 
     try {
       setIsMintingTokenA(true); // Start minting Token A
-      await writeContract({
+      writeContract({
         address: '0x3f03CE1164071722328c14d46a53092aebc8a8B0', // Replace with your contract address
         abi: abi,
         functionName: 'mint',
@@ -69,7 +69,7 @@ const MintTokens: React.FC = () => {
 
     try {
       setIsMintingTokenB(true); // Start minting Token B
-      await writeContract({
+      writeContract({
         address: '0x8E395706B44c4dcc6A2ed88C9b3eA85A79ef8a68',
         abi: abi,
         functionName: 'mint',
