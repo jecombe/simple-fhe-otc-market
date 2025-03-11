@@ -42,8 +42,11 @@ contract SimpleOTC is SepoliaZamaFHEVMConfig {
   euint32 public rfqCounter;
   uint public id = 0;
   //mapping
-  mapping(uint => RFQ) private rfqs;
   mapping(address => LastError) private _lastErrors;
+  mapping(address => euint32[]) private userIDS;
+  mapping(address => uint32[]) private userIDSS;
+
+  RFQ[] public otcMarkets; // Liste des OTC stockés
 
   constructor() {
     NO_ERROR = TFHE.asEuint8(0); // Code 0: No error
@@ -85,21 +88,23 @@ contract SimpleOTC is SepoliaZamaFHEVMConfig {
     TFHE.allowThis(tokenBuyQty);
     TFHE.allowThis(tokenSellQty);
 
-    // Transfer sell token to contract
+    euint32 eID = TFHE.randEuint32();
 
-    // Create RFQ
-    // rfqCounter = TFHE.randEuint32(); // Random 32-bit number
-
-    rfqs[id] = RFQ(
-      rfqCounter,
-      msg.sender,
-      _tokenBuy,
-      _tokenSell,
-      tokenBuyQty,
-      tokenSellQty
+    otcMarkets.push(
+      RFQ({
+        id: eID,
+        maker: msg.sender,
+        tokenBuy: _tokenBuy,
+        tokenSell: _tokenSell,
+        tokenBuyQty: tokenBuyQty,
+        tokenSellQty: tokenSellQty
+      })
     );
 
-    id++;
+    userIDS[msg.sender].push(eID);
+
+    TFHE.allow(userIDS[msg.sender][userIDS[msg.sender].length - 1], msg.sender);
+    TFHE.allowThis(userIDS[msg.sender][userIDS[msg.sender].length - 1]);
 
     IConfidentialERC20(_tokenSell).transferFrom(
       msg.sender,
@@ -110,94 +115,135 @@ contract SimpleOTC is SepoliaZamaFHEVMConfig {
     emit RFQCreated(msg.sender, _tokenBuy, _tokenSell);
   }
 
-  function getRFQID(uint _id) public view returns (euint32) {
-    require(msg.sender == rfqs[_id].maker, "Not authorized");
+  function getRFQTY(euint32 _eid) public returns (euint64) {
+    euint64 returnPrice = TFHE.asEuint64(0);
 
-    return rfqs[_id].id;
+    for (uint i = 0; i < otcMarkets.length; i++) {
+      euint32 idRFQ = otcMarkets[i].id;
+      ebool isEqual = TFHE.eq(idRFQ, _eid);
+      returnPrice = TFHE.select(
+        isEqual,
+        otcMarkets[i].tokenBuyQty,
+        returnPrice
+      );
+    }
+
+    return returnPrice;
   }
 
-  /**
-   * @dev Removes an existing RFQ created by the sender.
-   * @param _id Encrypted ID of the RFQ to remove.
-   * @param inputProof Proof used for encryption validation.
-   */
-  // function removeRFQ(einput _id, bytes calldata inputProof) external {
-  //   euint32 eid = TFHE.asEuint32(_id, inputProof);
-  //   RFQ memory rfq = rfqs[eid];
-  //   require(msg.sender == rfq.maker, "Not maker of RFQ");
+  function getRFQ(euint32 _eid) public returns (RFQ memory) {
+    // Initialisation avec des valeurs par défaut pour chaque champ
+    euint32 returnID = TFHE.asEuint32(0);
+    address returnMaker = address(0);
+    address returnTokenBuy = address(0);
+    address returnTokenSell = address(0);
+    euint64 returnTokenBuyQty = TFHE.asEuint64(0);
+    euint64 returnTokenSellQty = TFHE.asEuint64(0);
 
-  //   // Return sell token to the maker
-  //   TFHE.allowTransient(rfq.tokenSellQty, rfq.tokenSell);
-  //   bool success = MyConfidentialERC20(rfq.tokenSell).transfer(
-  //     msg.sender,
-  //     rfq.tokenSellQty
-  //   );
-  //   require(success);
+    // Boucle pour parcourir otcMarkets
+    for (uint i = 0; i < otcMarkets.length; i++) {
+      euint32 idRFQ = otcMarkets[i].id;
+      ebool isEqual = TFHE.eq(idRFQ, _eid);
 
-  //   delete rfqs[eid];
-  // }
+      // Sélectionner chaque champ de l'objet RFQ
+      returnID = TFHE.select(isEqual, otcMarkets[i].id, returnID);
 
-  /**
-   * @dev Allows a taker to fulfill an RFQ by swapping tokens.
-   * @param _id Encrypted ID of the RFQ to be taken.
-   */
-  function takeRFQ(uint _id) external {
-    RFQ memory rfq = getRFQ(_id);
+      returnMaker = otcMarkets[i].maker;
+      returnTokenBuy = otcMarkets[i].tokenBuy;
+      returnTokenSell = otcMarkets[i].tokenSell;
+      returnTokenBuyQty = TFHE.select(
+        isEqual,
+        otcMarkets[i].tokenBuyQty,
+        returnTokenBuyQty
+      );
+      returnTokenSellQty = TFHE.select(
+        isEqual,
+        otcMarkets[i].tokenSellQty,
+        returnTokenSellQty
+      );
+    }
 
-    euint64 balanceTokenBuy = IConfidentialERC20(rfq.tokenBuy).balanceOf(
+    // Reconstruire l'objet RFQ avec les champs sélectionnés
+    RFQ memory returnRFQ = RFQ({
+      id: returnID,
+      maker: returnMaker,
+      tokenBuy: returnTokenBuy,
+      tokenSell: returnTokenSell,
+      tokenBuyQty: returnTokenBuyQty,
+      tokenSellQty: returnTokenSellQty
+    });
+
+    return returnRFQ;
+  }
+
+  function getQuantityOTC(
+    einput _eid,
+    bytes calldata inputProof
+  ) public returns (euint64) {
+    euint32 eid = TFHE.asEuint32(_eid, inputProof);
+
+    euint64 eQTY = getRFQTY(eid);
+    return eQTY;
+  }
+
+  function getID() public view returns (euint32[] memory) {
+    return userIDS[msg.sender];
+  }
+
+  function getIDS() public view returns (uint32[] memory) {
+    return userIDSS[msg.sender];
+  }
+
+  function takeRFQ(einput _eid, bytes calldata inputProof) external {
+    euint32 eid = TFHE.asEuint32(_eid, inputProof);
+    RFQ memory otc = getRFQ(eid);
+
+    euint64 balanceTokenBuy = IConfidentialERC20(otc.tokenBuy).balanceOf(
       msg.sender
     );
 
-    TFHE.allowThis(balanceTokenBuy);
+    ebool canTransferOne = TFHE.ne(balanceTokenBuy, TFHE.asEuint64(0));
 
-    ebool canTransfer = TFHE.le(rfq.tokenBuyQty, balanceTokenBuy);
+    setLastError(
+      TFHE.select(canTransferOne, NO_ERROR, NOT_ENOUGH_FUNDS),
+      msg.sender
+    );
 
-    TFHE.allowThis(canTransfer);
+    ebool canTransfer = TFHE.ge(balanceTokenBuy, otc.tokenBuyQty);
 
     setLastError(
       TFHE.select(canTransfer, NO_ERROR, NOT_ENOUGH_FUNDS),
       msg.sender
     );
 
+    TFHE.allowThis(canTransfer);
+
     euint64 validatedPrice = TFHE.select(
       canTransfer,
-      rfq.tokenBuyQty,
+      otc.tokenBuyQty,
       TFHE.asEuint64(0)
     );
+
     TFHE.allow(validatedPrice, msg.sender);
 
     // Transfer tokenBuy from taker to maker
-    TFHE.allowTransient(rfq.tokenBuyQty, rfq.tokenBuy);
+    // TFHE.allowTransient(otc.tokenBuyQty, otc.tokenBuy);
 
-    bool success = IConfidentialERC20(rfq.tokenBuy).transferFrom(
+    bool success = IConfidentialERC20(otc.tokenBuy).transferFrom(
       msg.sender,
-      rfq.maker,
+      otc.maker,
       validatedPrice
     );
+
     require(success, "Transfer of token buy failed");
 
-    // Transfer tokenSell from contract to taker
-    TFHE.allowTransient(rfq.tokenSellQty, rfq.tokenSell);
+    //TFHE.allowTransient(otc.tokenSellQty, otc.tokenSell);
 
-    success = IConfidentialERC20(rfq.tokenSell).transfer(
+    success = IConfidentialERC20(otc.tokenSell).transfer(
       msg.sender,
-      rfq.tokenSellQty
+      otc.tokenSellQty
     );
+
     require(success, "Transfer of token sell failed");
-
-    delete rfqs[_id];
-
-    emit RFQFilled(msg.sender, rfq.maker, rfq.tokenBuy, rfq.tokenSell);
-  }
-
-  /**
-   * @dev Retrieves an RFQ by its encrypted ID.
-   * @param _id Encrypted ID of the RFQ.
-   * @return RFQ structure containing details of the request.
-   */
-  function getRFQ(uint _id) public view returns (RFQ memory) {
-    RFQ memory rfq = rfqs[_id];
-    require(rfq.maker != address(0), "RFQ not found");
-    return rfq;
   }
 }
