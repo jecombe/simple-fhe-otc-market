@@ -56,6 +56,7 @@ export function ConnectPublicClient() {
       'MetaMask or another web3 wallet is not installed. Please install one to proceed.';
     throw new Error(errorMessage);
   }
+
   const publicClient = createPublicClient({
     chain: sepolia,
     transport: http(),
@@ -66,5 +67,14 @@ export function ConnectPublicClient() {
 export const waitingTransaction = (hash: any) => {
   return ConnectPublicClient().waitForTransactionReceipt({
     hash,
+  });
+};
+
+export const getReadFunction = async (address, abi, functionName, args) => {
+  return ConnectPublicClient().readContract({
+    address,
+    abi,
+    functionName,
+    args,
   });
 };

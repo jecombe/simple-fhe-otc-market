@@ -1,11 +1,45 @@
 'use client';
 import React, { useState } from 'react';
+import OTC_ABI from '../abi/SimpleOTC.json';
+import TOKEN from '../abi/Token.json';
+import { useFhevmInstance } from '@/hooks/fhevmSetup';
+import {
+  useAccount,
+  useWaitForTransactionReceipt,
+  useWriteContract,
+} from 'wagmi';
 
 const AcceptSwap: React.FC = () => {
   const [orderId, setOrderId] = useState('');
+  const { chain, address } = useAccount();
 
-  const handleAcceptSwap = () => {
-    console.log('Swap accepted with ID :', orderId);
+  const { writeContract, data: mintHash } = useWriteContract();
+
+  const { isLoading: isWaitingForTxA } = useWaitForTransactionReceipt({
+    hash: mintHash,
+  });
+
+  const { isLoading: isWaitingForTxB } = useWaitForTransactionReceipt({
+    hash: mintHash,
+  });
+
+  const handleAcceptSwap = async () => {
+    if (!orderId) {
+      console.log('Order ID is required');
+      return;
+    }
+
+    try {
+      /*const inputsApprove = await fhevmInstance
+        .createEncryptedInput(
+          '0x8E395706B44c4dcc6A2ed88C9b3eA85A79ef8a68',
+          address
+        )
+        .add64(Number(price))
+        .encrypt();*/
+    } catch (error) {
+      console.error('Error calling getQuantityOTC:', error);
+    }
   };
 
   return (

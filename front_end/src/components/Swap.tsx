@@ -10,18 +10,19 @@ import {
   FormControl,
   InputLabel,
   Box,
+  CircularProgress,
 } from '@mui/material';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
 import { useFhevmInstance } from '@/hooks/fhevmSetup';
 import {
   useAccount,
+  useReadContract,
   useWaitForTransactionReceipt,
+  useWalletClient,
   useWriteContract,
 } from 'wagmi';
-import { ethers } from 'ethers';
 import OTC_ABI from '../abi/SimpleOTC.json';
 import TOKEN from '../abi/Token.json';
-
 import { bytesToHex } from 'viem';
 
 const Swap: React.FC = () => {
@@ -29,12 +30,17 @@ const Swap: React.FC = () => {
   const [tokenB, setTokenB] = useState('');
   const [quantity, setQuantity] = useState('');
   const [price, setPrice] = useState('');
-  const { chain, address } = useAccount();
+  const [otcIds, setOtcIds] = useState<number[]>([]);
+  const [loadingIds, setLoadingIds] = useState(false);
+  const [loadingRequest, setLoadingRequest] = useState(false);
 
+  const { chain, address } = useAccount();
   const { data: fhevmInstance } = useFhevmInstance(
     chain?.rpcUrls.default.http[0] as string
   );
-  const OTC_ADDR = '0x83Db0145D35ac108cE60107c1FAbb58f3dE6648A';
+  const { data: walletClient } = useWalletClient();
+
+  const OTC_ADDR = '0x62B9E5070bC74794c915cf1aC96167D3708e7d17';
 
   const tokenList = [
     { name: 'Token A', address: '0x3f03CE1164071722328c14d46a53092aebc8a8B0' },
@@ -46,41 +52,50 @@ const Swap: React.FC = () => {
     data: bidHash,
     isPending: isBidding,
   } = useWriteContract();
-
   const { isLoading: isWaitingForBid, isSuccess: bidSuccess } =
-    useWaitForTransactionReceipt({
-      hash: bidHash,
-    });
+    useWaitForTransactionReceipt({ hash: bidHash });
+
+  const { data, isLoading } = useReadContract({
+    address: OTC_ADDR,
+    abi: OTC_ABI,
+    functionName: 'getID',
+    args: [],
+    account: walletClient?.account,
+  });
+
+  const handleGetIds = async () => {
+    setLoadingIds(true);
+    try {
+      console.log(data);
+      const { publicKey, privateKey } = fhevmInstance?.generateKeypair();
+      const eip712 = fhevmInstance?.createEIP712(publicKey, OTC_ADDR);
+      const params = [address, JSON.stringify(eip712)];
+      const signature = await window.ethereum.request({
+        method: 'eth_signTypedData_v4',
+        params,
+      });
+
+      const myIDS = await fhevmInstance.reencrypt(
+        data[data.length - 1],
+        privateKey,
+        publicKey,
+        signature,
+        OTC_ADDR,
+        address
+      );
+      console.log('RESULT', myIDS.toString());
+
+      setOtcIds([myIDS.toString()]);
+    } catch (error) {
+      console.log('Erreur lors de la récupération des OTCs:', error);
+    }
+    setLoadingIds(false);
+  };
 
   const handleCreateRequest = async () => {
+    setLoadingRequest(true);
     try {
-      console.log(fhevmInstance);
       if (!fhevmInstance) return;
-
-      // const inputs = await fhevmInstance
-      //   .createEncryptedInput(OTC_ADDR, address)
-      //   .add64(Number(quantity))
-      //   .add64(Number(price))
-      //   .encrypt();
-
-      const inputsApprove = await fhevmInstance
-        .createEncryptedInput(
-          '0x8E395706B44c4dcc6A2ed88C9b3eA85A79ef8a68',
-          address
-        )
-        .add64(Number(price))
-        .encrypt();
-
-      swapRFQ({
-        address: '0x8E395706B44c4dcc6A2ed88C9b3eA85A79ef8a68', // Replace with your contract address
-        abi: TOKEN,
-        functionName: 'approve',
-        args: [
-          OTC_ADDR,
-          bytesToHex(inputsApprove.handles[0]),
-          bytesToHex(inputsApprove.inputProof),
-        ], // Amount and recipient
-      });
 
       const inputs = await fhevmInstance
         .createEncryptedInput(OTC_ADDR, address)
@@ -89,7 +104,7 @@ const Swap: React.FC = () => {
         .encrypt();
 
       swapRFQ({
-        address: OTC_ADDR, // Replace with your contract address
+        address: OTC_ADDR,
         abi: OTC_ABI,
         functionName: 'createRFQ',
         args: [
@@ -98,29 +113,17 @@ const Swap: React.FC = () => {
           bytesToHex(inputs.handles[0]),
           bytesToHex(inputs.handles[1]),
           bytesToHex(inputs.inputProof),
-        ], // Amount and recipient
+        ],
       });
-
-      const abi = [
-        {
-          inputs: [
-            { internalType: 'address', name: 'to', type: 'address' },
-            { internalType: 'uint64', name: 'amount', type: 'uint64' },
-          ],
-          name: 'mint',
-          outputs: [],
-          stateMutability: 'nonpayable',
-          type: 'function',
-        },
-      ];
 
       console.log('New RFQ OTC :', { tokenA, tokenB, quantity, price });
     } catch (error) {
       console.log(error);
     }
+    setLoadingRequest(false);
   };
 
-  const handleSwapTokens = async () => {
+  const handleSwapTokens = () => {
     setTokenA(tokenB);
     setTokenB(tokenA);
   };
@@ -131,7 +134,6 @@ const Swap: React.FC = () => {
         Create Request For Quest OTC
       </h2>
 
-      {/* Formulaire Token A */}
       <Box
         display="grid"
         gridTemplateColumns="1fr 1fr"
@@ -169,14 +171,12 @@ const Swap: React.FC = () => {
         />
       </Box>
 
-      {/* Bouton Swap */}
       <div className="flex justify-center mb-6">
         <IconButton onClick={handleSwapTokens} color="primary">
           <SwapVertIcon />
         </IconButton>
       </div>
 
-      {/* Formulaire Token B */}
       <Box
         display="grid"
         gridTemplateColumns="1fr 1fr"
@@ -214,16 +214,39 @@ const Swap: React.FC = () => {
         />
       </Box>
 
-      {/* Bouton Submit */}
       <Button
         onClick={handleCreateRequest}
         fullWidth
         variant="contained"
         color="primary"
         size="large"
+        disabled={loadingRequest}
       >
-        Submit OTC Request
+        {loadingRequest ? <CircularProgress size={24} /> : 'Submit OTC Request'}
       </Button>
+
+      <Button
+        onClick={handleGetIds}
+        fullWidth
+        variant="outlined"
+        color="secondary"
+        size="large"
+        className="mt-4"
+        disabled={loadingIds}
+      >
+        {loadingIds ? <CircularProgress size={24} /> : 'Get My OTC IDs'}
+      </Button>
+
+      <div className="mt-4">
+        <h3>My OTC IDs</h3>
+        <ul>
+          {otcIds.length > 0 ? (
+            otcIds.map((id) => <li key={id}>ID: {id}</li>)
+          ) : (
+            <li>No OTC IDs found</li>
+          )}
+        </ul>
+      </div>
     </div>
   );
 };
